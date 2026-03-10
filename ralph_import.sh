@@ -437,7 +437,8 @@ PROMPTEOF
         # --print: Required for piped input (prevents interactive session hang)
         # --allowedTools: Permits file operations without user prompts
         # --strict-mcp-config: Skip loading user MCP servers (faster startup)
-        if $CLAUDE_CODE_CMD --print --strict-mcp-config --output-format "$CLAUDE_OUTPUT_FORMAT" --allowedTools "${CLAUDE_ALLOWED_TOOLS[@]}" < "$CONVERSION_PROMPT_FILE" > "$CONVERSION_OUTPUT_FILE" 2> "$stderr_file"; then
+        # Unset CLAUDECODE to allow nested Claude invocation
+        if (unset CLAUDECODE; $CLAUDE_CODE_CMD --print --strict-mcp-config --output-format "$CLAUDE_OUTPUT_FORMAT" --allowedTools "${CLAUDE_ALLOWED_TOOLS[@]}" < "$CONVERSION_PROMPT_FILE" > "$CONVERSION_OUTPUT_FILE" 2> "$stderr_file"); then
             cli_exit_code=0
         else
             cli_exit_code=$?
@@ -445,7 +446,8 @@ PROMPTEOF
     else
         # Standard CLI invocation (backward compatible)
         # --print: Required for piped input (prevents interactive session hang)
-        if $CLAUDE_CODE_CMD --print < "$CONVERSION_PROMPT_FILE" > "$CONVERSION_OUTPUT_FILE" 2> "$stderr_file"; then
+        # Unset CLAUDECODE to allow nested Claude invocation
+        if (unset CLAUDECODE; $CLAUDE_CODE_CMD --print < "$CONVERSION_PROMPT_FILE" > "$CONVERSION_OUTPUT_FILE" 2> "$stderr_file"); then
             cli_exit_code=0
         else
             cli_exit_code=$?

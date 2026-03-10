@@ -1219,9 +1219,10 @@ execute_claude_code() {
         # read from stdin even in -p (print) mode, causing the process to hang
         # Disable errexit for pipeline - timeout returns non-zero exit code 124
         # which would cause set -e to silently kill the entire script (Issue #175)
+        # Unset CLAUDECODE to allow nested Claude invocation
         set +e
         set -o pipefail
-        portable_timeout ${timeout_seconds}s stdbuf -oL "${LIVE_CMD_ARGS[@]}" \
+        portable_timeout ${timeout_seconds}s stdbuf -oL bash -c 'unset CLAUDECODE; "$@"' bash "${LIVE_CMD_ARGS[@]}" \
             < /dev/null 2>&1 | stdbuf -oL tee "$output_file" | stdbuf -oL jq --unbuffered -j "$jq_filter" 2>/dev/null | tee "$LIVE_LOG_FILE"
 
         # Capture exit codes from pipeline
@@ -1288,7 +1289,8 @@ execute_claude_code() {
             # stdin must be redirected from /dev/null because newer Claude CLI versions
             # read from stdin even in -p (print) mode, causing SIGTTIN suspension
             # when the process is backgrounded
-            if portable_timeout ${timeout_seconds}s "${CLAUDE_CMD_ARGS[@]}" < /dev/null > "$output_file" 2>&1 &
+            # Unset CLAUDECODE to allow nested Claude invocation
+            if portable_timeout ${timeout_seconds}s bash -c 'unset CLAUDECODE; "$@"' bash "${CLAUDE_CMD_ARGS[@]}" < /dev/null > "$output_file" 2>&1 &
             then
                 :  # Continue to wait loop
             else
@@ -1302,8 +1304,9 @@ execute_claude_code() {
         # Fall back to legacy stdin piping if modern mode failed or not enabled
         # Note: Legacy mode doesn't use --allowedTools, so tool permissions
         # will be handled by Claude Code's default permission system
+        # Unset CLAUDECODE to allow nested Claude invocation
         if [[ "$use_modern_cli" == "false" ]]; then
-            if portable_timeout ${timeout_seconds}s $CLAUDE_CODE_CMD < "$PROMPT_FILE" > "$output_file" 2>&1 &
+            if portable_timeout ${timeout_seconds}s bash -c 'unset CLAUDECODE; "$@"' bash "$CLAUDE_CODE_CMD" < "$PROMPT_FILE" > "$output_file" 2>&1 &
             then
                 :  # Continue to wait loop
             else
